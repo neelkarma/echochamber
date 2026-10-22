@@ -6,6 +6,8 @@ x-zenith:
     source: https://github.com/neelkarma/echochamber
     license: MIT
     tags: [links, chat, sveltekit]
+  sign_in:
+    redirect_paths: [/api/auth/callback/oidc]
   expose:
     - { service: web, port: 3000, web: true }
   storage:
@@ -19,6 +21,15 @@ x-zenith:
       services: [web]
     BETTER_AUTH_URL:
       alias: ZENITH_PUBLIC_URL
+      services: [web]
+    OIDC_ISSUER:
+      alias: ZENITH_OIDC_ISSUER
+      services: [web]
+    OIDC_CLIENT_ID:
+      alias: ZENITH_OIDC_CLIENT_ID
+      services: [web]
+    OIDC_CLIENT_SECRET:
+      alias: ZENITH_OIDC_CLIENT_SECRET
       services: [web]
     GITHUB_CLIENT_ID:
       services: [web]
@@ -52,6 +63,7 @@ services:
       - "3000:3000"
     environment:
       DATABASE_PATH: /data/echochamber.db
+      OIDC_PROVIDER_NAME: Zenith
     volumes:
       - data:/data
 

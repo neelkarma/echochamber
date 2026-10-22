@@ -1,5 +1,7 @@
 import { betterAuth, getCurrentAdapter, type BetterAuthPlugin } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
+import { genericOAuth } from "better-auth/plugins/generic-oauth";
+import { oidcConfig } from "./oidc.ts";
 import { username } from "better-auth/plugins/username";
 import { sveltekitCookies } from "better-auth/svelte-kit";
 import { getRequestEvent } from "$app/server";
@@ -22,8 +24,15 @@ const socialProviders = {
     }),
 };
 
-export type OAuthProvider = "github" | "google";
-export const oauthProviders = Object.keys(socialProviders) as OAuthProvider[];
+const oidc = oidcConfig(env);
+export type OAuthProvider = {
+  id: "github" | "google" | "oidc";
+  name: string;
+};
+export const oauthProviders: OAuthProvider[] = [];
+if (socialProviders.github) oauthProviders.push({ id: "github", name: "GitHub" });
+if (socialProviders.google) oauthProviders.push({ id: "google", name: "Google" });
+if (oidc.length) oauthProviders.push({ id: "oidc", name: env.OIDC_PROVIDER_NAME });
 
 /**
  * Friends invite each other by @username, so every account needs one. Email
@@ -76,7 +85,12 @@ export const auth = betterAuth({
   socialProviders,
   advanced: { database: { joins: true } },
   // usernamesForEveryone runs before username() validates what it picked; sveltekitCookies must stay last
-  plugins: [usernamesForEveryone, username(), sveltekitCookies(getRequestEvent)],
+  plugins: [
+    usernamesForEveryone,
+    username(),
+    genericOAuth({ config: oidc }),
+    sveltekitCookies(getRequestEvent),
+  ],
 });
 
 /** Creates or updates Better Auth's tables. Idempotent; runs on startup before our migrations. */
